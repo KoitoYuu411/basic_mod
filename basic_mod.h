@@ -3,16 +3,15 @@ class basic_mod {
     using LL = decltype(mod);
     LL v;
 public:
-    constexpr basic_mod(LL v = 0) : v(v) {} 
-    template< class Int, class = enable_if_t<is_integral_v<Int>, void> >
-    //explicit
-        constexpr operator Int() const { return static_cast<Int>(v); }
-    
-    constexpr basic_mod& operator+=(basic_mod rhs) { v = (v + rhs.v) % mod; return *this; }
-    constexpr basic_mod& operator-=(basic_mod rhs) { v = ((v - rhs.v) % mod + mod) % mod; return *this;  }
+    basic_mod()=default;
+    constexpr basic_mod(LL x) : v((x%=mod)<0?x+=mod:x) {} 
+    template< class Int, class = enable_if_t<is_integral_v<Int> && !is_same_v<Int, int>, void> >
+    explicit constexpr operator Int() const { return static_cast<Int>(v); }
+    constexpr operator int() const { return static_cast<int>(v); }
+    constexpr basic_mod& operator+=(basic_mod rhs) { v -= mod - rhs.v; if (v < 0) v += mod; return *this; }
+    constexpr basic_mod& operator-=(basic_mod rhs) { v -= rhs.v; if (v < 0) v += mod; return *this;  }
     constexpr basic_mod& operator*=(basic_mod rhs) { v = (v * rhs.v) % mod; return *this; }
-    constexpr basic_mod& operator/=(basic_mod rhs) { *this *= inv(rhs); return *this; }
-    
+    constexpr basic_mod& operator/=(basic_mod rhs) { *this *= rhs.inv(); return *this; }
     friend constexpr basic_mod operator+(basic_mod lhs, basic_mod rhs) { return lhs += rhs; }
     friend constexpr basic_mod operator-(basic_mod lhs, basic_mod rhs) { return lhs -= rhs; }
     friend constexpr basic_mod operator*(basic_mod lhs, basic_mod rhs) { return lhs *= rhs; }
@@ -39,13 +38,13 @@ public:
     friend constexpr basic_mod operator+(basic_mod rhs) { return rhs; }
     friend constexpr basic_mod operator-(basic_mod rhs) { return 0 - rhs; }
     
-    friend constexpr basic_mod inv(basic_mod x) { return pow(mod - 2); }
+    friend constexpr basic_mod inv(basic_mod x) { return x.pow(mod - 2); }
     template< class Int > enable_if_t<is_integral_v<Int>, basic_mod>
     friend constexpr pow(basic_mod lhs, Int rhs) { return lhs.pow(rhs); }
     
-    constexpr basic_mod inv() { return pow(mod - 2); }
+    constexpr basic_mod inv() const { return pow(mod - 2); }
     template< class Int > enable_if_t<is_integral_v<Int>, basic_mod>
-    constexpr pow(Int rhs) {
+    constexpr pow(Int rhs) const {
         basic_mod base = *this, ret = 1;
         while (rhs != 0) {
             if (rhs & 1) 
@@ -55,11 +54,7 @@ public:
         }
         return ret;
     }
-    
-    constexpr basic_mod exchange_inv(basic_mod x) { return *this = pow(x, mod - 2); }
-    template< class Int > enable_if_t<is_integral_v<Int>, basic_mod>
-    constexpr exchange_pow(Int rhs) { return *this = pow(rhs); }
-    
+
     template< class L, class R > enable_if_t<is_integral_v<L> && is_integral_v<R>, basic_mod>
     static constexpr pow(L lhs, R rhs) { return static_cast<basic_mod>(lhs).pow(rhs); }
     template< class Int > enable_if_t<is_integral_v<Int>, basic_mod>
